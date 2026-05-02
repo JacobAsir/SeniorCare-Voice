@@ -5,7 +5,8 @@
  * SeniorCare Voice API
  * OpenAPI spec version: 0.1.0
  */
+import type { DemoCategory } from "./demoCategory";
 
-export interface HealthStatus {
-  status: string;
+export interface DemoPromptsResponse {
+  categories: DemoCategory[];
 }

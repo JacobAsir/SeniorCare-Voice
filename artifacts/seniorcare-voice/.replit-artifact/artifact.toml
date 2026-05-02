@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SeniorCare Voice"
+version = "1.0.0"
+id = "artifacts/seniorcare-voice"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19893
+
+[services.development]
+run = "pnpm --filter @workspace/seniorcare-voice run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/seniorcare-voice", "run", "build" ]
+publicDir = "artifacts/seniorcare-voice/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19893"
+BASE_PATH = "/"

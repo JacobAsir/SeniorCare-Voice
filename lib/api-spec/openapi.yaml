@@ -3,20 +3,30 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SeniorCare Voice API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: transcription
+    description: Audio transcription service
+  - name: intent
+    description: Intent classification service
+  - name: respond
+    description: Response generation service
+  - name: tts
+    description: Text-to-speech service
+  - name: demo
+    description: Demo and fixture data
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +34,316 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /transcribe:
+    post:
+      operationId: transcribeAudio
+      tags: [transcription]
+      summary: Transcribe audio to text
+      description: Accepts audio as base64 or text input. Returns transcript and confidence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranscribeRequest"
+      responses:
+        "200":
+          description: Transcription result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscribeResponse"
+
+  /classify:
+    post:
+      operationId: classifyIntent
+      tags: [intent]
+      summary: Classify the intent of a transcript
+      description: Takes a transcript string and classifies it into a bounded intent category.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassifyRequest"
+      responses:
+        "200":
+          description: Intent classification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassifyResponse"
+
+  /respond:
+    post:
+      operationId: generateResponse
+      tags: [respond]
+      summary: Generate a bounded response for a classified intent
+      description: Generates a calm, simplified response using intent context and the original transcript.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RespondRequest"
+      responses:
+        "200":
+          description: Generated response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespondResponse"
+
+  /tts:
+    post:
+      operationId: synthesizeSpeech
+      tags: [tts]
+      summary: Convert text to speech audio
+      description: Synthesizes spoken audio from text. Returns base64-encoded audio or a URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TtsRequest"
+      responses:
+        "200":
+          description: TTS audio result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TtsResponse"
+
+  /demo-prompts:
+    get:
+      operationId: getDemoPrompts
+      tags: [demo]
+      summary: Get demo example prompts
+      description: Returns categorized example prompts for the demo / onboarding flow.
+      responses:
+        "200":
+          description: List of demo prompts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoPromptsResponse"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ── Transcription ──────────────────────────────────────────────────────────
+    TranscribeRequest:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [mock, live]
+          description: "mock = use fixture text; live = process audioBase64"
+        audioBase64:
+          type: string
+          description: Base64-encoded audio blob (required when mode=live)
+        mockPromptId:
+          type: string
+          description: Optional fixture prompt ID for mock mode
+
+    TranscribeResponse:
+      type: object
+      required: [transcript, confidence, mode]
+      properties:
+        transcript:
+          type: string
+        confidence:
+          type: number
+          format: float
+        mode:
+          type: string
+          enum: [mock, live, fallback]
+        languageDetected:
+          type: string
+
+    # ── Intent Classification ──────────────────────────────────────────────────
+    ClassifyRequest:
+      type: object
+      required: [transcript]
+      properties:
+        transcript:
+          type: string
+
+    ClassifyResponse:
+      type: object
+      required: [intent, confidence, isSafe, isSupported]
+      properties:
+        intent:
+          type: string
+          enum:
+            - explain_label
+            - explain_notice
+            - daily_utility
+            - repeat_answer
+            - simplify_answer
+            - caregiver_handoff
+            - unsupported
+            - safety_escalate
+        confidence:
+          type: number
+          format: float
+        isSafe:
+          type: boolean
+        isSupported:
+          type: boolean
+        escalationReason:
+          type: string
+
+    # ── Response Generation ────────────────────────────────────────────────────
+    RespondRequest:
+      type: object
+      required: [transcript, intent, mode]
+      properties:
+        transcript:
+          type: string
+        intent:
+          type: string
+          enum:
+            - explain_label
+            - explain_notice
+            - daily_utility
+            - repeat_answer
+            - simplify_answer
+            - caregiver_handoff
+            - unsupported
+            - safety_escalate
+        mode:
+          type: string
+          enum: [mock, live]
+        sessionContext:
+          type: object
+          description: Optional session context (last answer, caregiver mode flag)
+          properties:
+            lastAnswerText:
+              type: string
+            caregiverMode:
+              type: boolean
+
+    RespondResponse:
+      type: object
+      required: [transcript, intent, confidenceScore, answerTextJa, answerTextEn, followUpOptions, escalationFlag, processingMode]
+      properties:
+        transcript:
+          type: string
+        intent:
+          type: string
+        confidenceScore:
+          type: number
+          format: float
+        answerTextJa:
+          type: string
+        answerTextEn:
+          type: string
+        answerCaregiverNote:
+          type: string
+        followUpOptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FollowUpOption"
+        escalationFlag:
+          type: boolean
+        escalationReason:
+          type: string
+        processingMode:
+          type: string
+          enum: [mock, live, fallback]
+
+    FollowUpOption:
+      type: object
+      required: [id, label, labelJa]
+      properties:
+        id:
+          type: string
+          enum: [repeat, simplify, caregiver_view, show_text]
+        label:
+          type: string
+        labelJa:
+          type: string
+
+    # ── TTS ───────────────────────────────────────────────────────────────────
+    TtsRequest:
+      type: object
+      required: [text, mode]
+      properties:
+        text:
+          type: string
+        mode:
+          type: string
+          enum: [mock, live]
+        speed:
+          type: string
+          enum: [normal, slow]
+          default: normal
+        language:
+          type: string
+          enum: [ja, en]
+          default: ja
+
+    TtsResponse:
+      type: object
+      required: [mode, available]
+      properties:
+        audioBase64:
+          type: string
+          description: Base64-encoded MP3/WAV audio (present when available=true)
+        audioMimeType:
+          type: string
+        mode:
+          type: string
+          enum: [mock, live, fallback]
+        available:
+          type: boolean
+        durationSeconds:
+          type: number
+          format: float
+
+    # ── Demo ──────────────────────────────────────────────────────────────────
+    DemoPromptsResponse:
+      type: object
+      required: [categories]
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemoCategory"
+
+    DemoCategory:
+      type: object
+      required: [id, label, labelJa, prompts]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        labelJa:
+          type: string
+        prompts:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemoPrompt"
+
+    DemoPrompt:
+      type: object
+      required: [id, textJa, textEn, intent]
+      properties:
+        id:
+          type: string
+        textJa:
+          type: string
+        textEn:
+          type: string
+        intent:
+          type: string
