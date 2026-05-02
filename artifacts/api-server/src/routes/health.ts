@@ -4,7 +4,8 @@ import { HealthCheckResponse } from "@workspace/api-zod";
 const router: IRouter = Router();
 
 router.get("/healthz", (_req, res) => {
-  const data = HealthCheckResponse.parse({ status: "ok" });
+  const mode = process.env.SENIORCARE_MODE === "live" ? "live" : "mock";
+  const data = HealthCheckResponse.parse({ status: "ok", mode });
   res.json(data);
 });
 

@@ -15,6 +15,7 @@ export * from "./demoPromptsResponse";
 export * from "./followUpOption";
 export * from "./followUpOptionId";
 export * from "./healthStatus";
+export * from "./healthStatusMode";
 export * from "./respondRequest";
 export * from "./respondRequestIntent";
 export * from "./respondRequestMode";

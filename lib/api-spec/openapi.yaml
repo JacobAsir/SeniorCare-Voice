@@ -133,10 +133,13 @@ components:
   schemas:
     HealthStatus:
       type: object
-      required: [status]
+      required: [status, mode]
       properties:
         status:
           type: string
+        mode:
+          type: string
+          enum: [mock, live]
 
     # ── Transcription ──────────────────────────────────────────────────────────
     TranscribeRequest:

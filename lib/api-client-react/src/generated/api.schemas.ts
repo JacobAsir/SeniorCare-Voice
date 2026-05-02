@@ -5,8 +5,17 @@
  * SeniorCare Voice API
  * OpenAPI spec version: 0.1.0
  */
+export type HealthStatusMode =
+  (typeof HealthStatusMode)[keyof typeof HealthStatusMode];
+
+export const HealthStatusMode = {
+  mock: "mock",
+  live: "live",
+} as const;
+
 export interface HealthStatus {
   status: string;
+  mode: HealthStatusMode;
 }
 
 /**

@@ -5,7 +5,9 @@
  * SeniorCare Voice API
  * OpenAPI spec version: 0.1.0
  */
+import type { HealthStatusMode } from "./healthStatusMode";
 
 export interface HealthStatus {
   status: string;
+  mode: HealthStatusMode;
 }
